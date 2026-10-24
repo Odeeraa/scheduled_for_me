@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule & Task Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for task list */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-brand-600 text-white rounded-xl shadow-md">
+                        <i class="fa-solid me-0 fa-calendar-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">ChronoSync</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Schedule & Calendar Reminders Tracker</p>
+                    </div>
+                </div>
+
+                <!-- Header Action Buttons -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Calendar Sync Modal Trigger Button -->
+                    <button onclick="openSyncModal()" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 rounded-lg transition-all border border-brand-200 dark:border-brand-800">
+                        <i class="fa-solid fa-calendar-plus text-brand-500"></i>
+                        <span class="hidden sm:inline">Sync with</span> Google Calendar
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Light/Dark Theme">
+                        <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Progress Banner Card -->
+        <section class="bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 dark:from-slate-800 dark:via-brand-950 dark:to-slate-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="space-y-2">
+                    <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-brand-200 backdrop-blur-sm border border-white/10">
+                        <i class="fa-solid fa-chart-line text-xs"></i>
+                        <span>Live Schedule Overview</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Your Schedule Dashboard</h2>
+                    <p class="text-slate-300 text-sm max-w-xl">
+                        Keep track of daily and weekly goals across all your devices. Export events directly into Google Calendar for seamless smart notifications and reminders.
+                    </p>
+                </div>
+
+                <!-- Circular / Bar Progress Summary -->
+                <div class="bg-white/10 dark:bg-slate-900/40 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[260px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Total Completion</span>
+                        <span id="progressPercentText" class="text-xl font-bold text-brand-300">0%</span>
+                    </div>
+                    <!-- Visual Progress Bar -->
+                    <div class="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden p-0.5 border border-white/5">
+                        <div id="progressBar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-full rounded-full transition-all duration-500 ease-out w-0"></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-3 text-xs text-slate-300">
+                        <span><strong id="completedTasksCount" class="text-white">0</strong> / <span id="totalTasksCount">0</span> Tasks Done</span>
+                        <span id="pendingTasksCountText" class="text-slate-400">0 Pending</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Decorative Background Blob -->
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        </section>
+
+        <!-- Controls Toolbar (Filters & Add Task Trigger) -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <!-- Filter Tabs -->
+            <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors bg-brand-600 text-white">
+                    All Tasks
+                </button>
+                <button onclick="setFilter('Pending')" id="filter-Pending" class="filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    Pending
+                </button>
+                <button onclick="setFilter('In Progress')" id="filter-InProgress" class="filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    In Progress
+                </button>
+                <button onclick="setFilter('Done')" id="filter-Done" class="filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    Completed
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2">
+                <!-- Search Box -->
+                <div class="relative flex-1 sm:w-48">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderTasks()" placeholder="Search activities..." class="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <!-- Add Task Button -->
+                <button onclick="openAddTaskModal()" class="whitespace-nowrap px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs sm:text-sm rounded-lg shadow-sm transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>Add New Task</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Task Grid / List View -->
+        <div id="taskList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Task cards will be rendered dynamically via Javascript -->
+        </div>
+
+        <!-- Empty State Container (Hidden when tasks exist) -->
+        <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 text-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+            <div class="w-16 h-16 bg-brand-50 dark:bg-slate-700 text-brand-500 dark:text-brand-400 rounded-full flex items-center justify-center mb-4 text-2xl">
+                <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">No tasks found</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 max-w-sm">Try adjusting your filters, searching for another task, or create a brand new task to get started.</p>
+            <button onclick="openAddTaskModal()" class="mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs sm:text-sm rounded-lg shadow-sm transition-all">
+                Add Task Now
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p>Sync your activities effortlessly across desktop and mobile devices.</p>
+    </footer>
+
+    <!-- ADD/EDIT TASK MODAL -->
+    <div id="taskModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transform transition-all">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800 dark:text-slate-100">Add New Schedule Task</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="taskForm" onsubmit="handleTaskSubmit(event)" class="space-y-4 mt-4">
+                <input type="hidden" id="taskId">
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Task Title *</label>
+                    <input type="text" id="taskTitle" required placeholder="e.g. Weekly Team Sync & Review" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <!-- Category & Priority Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Category</label>
+                        <select id="taskCategory" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Fitness">Fitness / Health</option>
+                            <option value="Study">Study / Learning</option>
+                            <option value="Meeting">Meeting</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Status</label>
+                        <select id="taskStatus" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date & Time Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Date *</label>
+                        <input type="date" id="taskDate" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Time *</label>
+                        <input type="time" id="taskTime" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Description / Notes</label>
+                    <textarea id="taskDescription" rows="3" placeholder="Add additional details or links..." class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 text-xs sm:text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-md transition-all">
+                        Save Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CALENDAR SYNC INSTRUCTIONS & EXPORT MODAL -->
+    <div id="syncModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-check text-brand-500 text-xl"></i>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Google Calendar Sync Guide</h3>
+                </div>
+                <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 my-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                <p>
+                    Keep your reminders consistent across all devices (iOS, Android, Mac, Windows) by connecting your scheduled items to Google Calendar.
+                </p>
+
+                <!-- Method 1: Direct Event Export -->
+                <div class="p-3 bg-brand-50 dark:bg-brand-950/40 rounded-xl border border-brand-200 dark:border-brand-800/60 space-y-2">
+                    <h4 class="font-semibold text-brand-700 dark:text-brand-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-export"></i> Option 1: Export All Tasks to .iCal (.ics) File
+                    </h4>
+                    <p class="text-xs">Download an ics calendar file containing all current schedule items and import it directly into Google Calendar, Apple Calendar, or Outlook.</p>
+                    <button onclick="exportToICS()" class="w-full mt-2 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium text-xs flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Download Schedule .ics File</span>
+                    </button>
+                </div>
+
+                <!-- Method 2: Individual Google Calendar Link -->
+                <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                    <h4 class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-brands fa-google"></i> Option 2: Individual Quick Add Links
+                    </h4>
+                    <p class="text-xs">Each task card on your dashboard has an instant <strong>"Add to Google Calendar"</strong> button (<i class="fa-solid fa-calendar-plus text-brand-500"></i>) that creates an event link with automatic popup reminders on your smartphone or desktop.</p>
+                </div>
+
+                <!-- Step-by-step Importing Guide -->
+                <div class="space-y-2">
+                    <h4 class="font-semibold text-slate-800 dark:text-slate-200">How to import .ics to Google Calendar:</h4>
+                    <ol class="list-decimal list-inside space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <li>Download the <code>.ics</code> file above.</li>
+                        <li>Open <a href="https://calendar.google.com" target="_blank" class="text-brand-500 underline">Google Calendar</a> on your web browser.</li>
+                        <li>Click the Gear icon (<i class="fa-solid fa-gear"></i>) in the top right &rarr; <strong>Settings</strong>.</li>
+                        <li>In the left sidebar, click <strong>Import & export</strong>.</li>
+                        <li>Upload your <code>.ics</code> file and select the destination calendar.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 text-right">
+                <button onclick="closeSyncModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-semibold">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic Javascript -->
+    <script>
+        // Default Sample Tasks
+        const defaultTasks = [
+            {
+                id: '1',
+                title: '6k Steps',
+                category: 'Fitness',
+                status: 'In Progress',
+                date: new Date().toISOString().split('T')[0],
+                time: '21:00',
+                description: 'Walking through the day.'
+            },
+            {
+                id: '2',
+                title: 'Read the book of Matthew',
+                category: 'Personal',
+                status: 'In Progress',
+                date: new Date().toISOString().split('T')[0],
+                time: '12:00',
+                description: 'Open the bible app and read or listen.'
+            },
+            {
+                id: '3',
+                title: 'Study Python & Data Architecture',
+                category: 'Study',
+                status: 'Pending',
+                date: new Date().toISOString().split('T')[0],
+                time: '19:30',
+                description: 'Follow designed schedule from Abnuel Analytics.'
+            }
+        ];
+
+        // Global State Variables
+        let tasks = [];
+        let currentFilter = 'all';
+
+        // Load Initial Data
+        window.onload = function() {
+            initTheme();
+            loadTasks();
+            renderTasks();
+        };
+
+        // --- LOCAL STORAGE HANDLING ---
+        function loadTasks() {
+            const stored = localStorage.getItem('chronoSync_tasks');
+            if (stored) {
+                try {
+                    tasks = JSON.parse(stored);
+                } catch(e) {
+                    tasks = defaultTasks;
+                }
+            } else {
+                tasks = defaultTasks;
+                saveTasks();
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem('chronoSync_tasks', JSON.stringify(tasks));
+            updateProgress();
+        }
+
+        // --- THEME SYSTEM (Dark / Light) ---
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun text-lg text-amber-400';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-moon text-lg';
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+            document.getElementById('themeIcon').className = isDark 
+                ? 'fa-solid fa-sun text-lg text-amber-400' 
+                : 'fa-solid fa-moon text-lg';
+        }
+
+        // --- TASK RENDER & FILTER ENGINE ---
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors";
+            });
+            const activeBtn = document.getElementById(`filter-${filter === 'In Progress' ? 'InProgress' : filter}`);
+            if(activeBtn) {
+                activeBtn.className = "filter-btn px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors bg-brand-600 text-white";
+            }
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('taskList');
+            const emptyState = document.getElementById('emptyState');
+            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+
+            let filtered = tasks.filter(t => {
+                const matchesFilter = (currentFilter === 'all') || (t.status === currentFilter);
+                const matchesSearch = t.title.toLowerCase().includes(searchKeyword) || 
+                                     (t.description && t.description.toLowerCase().includes(searchKeyword)) ||
+                                     t.category.toLowerCase().includes(searchKeyword);
+                return matchesFilter && matchesSearch;
+            });
+
+            // Sort tasks by date & time ascending
+            filtered.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+            container.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filtered.forEach(task => {
+                    const card = createTaskCardHtml(task);
+                    container.appendChild(card);
+                });
+            }
+
+            updateProgress();
+        }
+
+        function createTaskCardHtml(task) {
+            const div = document.createElement('div');
+            div.className = `bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border transition-all duration-200 hover:shadow-md flex flex-col justify-between ${
+                task.status === 'Done' ? 'border-slate-200 dark:border-slate-800 opacity-80' : 'border-slate-200 dark:border-slate-700'
+            }`;
+
+            // Category Badge colors
+            const categoryColors = {
+                'Work': 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                'Personal': 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                'Fitness': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                'Study': 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                'Meeting': 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+            };
+            const catClass = categoryColors[task.category] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600';
+
+            // Status Styling
+            const statusConfig = {
+                'Pending': { icon: 'fa-regular fa-circle text-slate-400', badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+                'In Progress': { icon: 'fa-solid fa-spinner text-amber-500 animate-spin', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800' },
+                'Done': { icon: 'fa-solid fa-circle-check text-emerald-500', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' }
+            };
+
+            const currentStatus = statusConfig[task.status] || statusConfig['Pending'];
+
+            div.innerHTML = `
+                <div>
+                    <!-- Top Info row -->
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md border ${catClass}">
+                            ${task.category}
+                        </span>
+                        
+                        <!-- Status Toggle Selector -->
+                        <div class="relative inline-block">
+                            <select onchange="updateTaskStatus('${task.id}', this.value)" class="text-xs font-medium rounded-lg px-2 py-1 cursor-pointer border border-transparent focus:outline-none focus:ring-1 focus:ring-brand-500 ${currentStatus.badge}">
+                                <option value="Pending" ${task.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="Done" ${task.status === 'Done' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Task Title -->
+                    <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-snug ${task.status === 'Done' ? 'line-through text-slate-400 dark:text-slate-500' : ''}">
+                        ${escapeHtml(task.title)}
+                    </h4>
+
+                    <!-- Task Description -->
+                    ${task.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2">${escapeHtml(task.description)}</p>` : ''}
+                </div>
+
+                <!-- Footer Section: Time & Calendar Action -->
+                <div class="pt-3 mt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center space-x-1.5">
+                        <i class="fa-regular fa-clock text-brand-500"></i>
+                        <span>${formatDate(task.date)} @ ${task.time}</span>
+                    </div>
+
+                    <div class="flex items-center space-x-1">
+                        <!-- Direct Google Calendar Link Button -->
+                        <a href="${generateGoogleCalendarUrl(task)}" target="_blank" title="Add to Google Calendar for Reminders" class="p-1.5 text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <i class="fa-solid fa-calendar-plus"></i>
+                        </a>
+
+                        <!-- Edit Button -->
+                        <button onclick="openEditTaskModal('${task.id}')" title="Edit Task" class="p-1.5 text-slate-400 hover:text-blue-500 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+
+                        <!-- Delete Button -->
+                        <button onclick="deleteTask('${task.id}')" title="Delete Task" class="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // Helper to escape HTML tags
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // Format Date nicely
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+
+        // Update overall progress indicators
+        function updateProgress() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.status === 'Done').length;
+            const pending = tasks.filter(t => t.status !== 'Done').length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('totalTasksCount').innerText = total;
+            document.getElementById('completedTasksCount').innerText = completed;
+            document.getElementById('pendingTasksCountText').innerText = `${pending} Pending`;
+            document.getElementById('progressPercentText').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+        }
+
+        // --- TASK CRUD OPERATIONS ---
+        function updateTaskStatus(id, newStatus) {
+            tasks = tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
+            saveTasks();
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+            document.getElementById('modalTitle').innerText = 'Add New Schedule Task';
+            document.getElementById('taskDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('taskTime').value = '09:00';
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function openEditTaskModal(id) {
+            const task = tasks.find(t => t.id === id);
+            if(!task) return;
+
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskCategory').value = task.category;
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('taskDate').value = task.date;
+            document.getElementById('taskTime').value = task.time;
+            document.getElementById('taskDescription').value = task.description || '';
+
+            document.getElementById('modalTitle').innerText = 'Edit Schedule Task';
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('taskTitle').value.trim();
+            const category = document.getElementById('taskCategory').value;
+            const status = document.getElementById('taskStatus').value;
+            const date = document.getElementById('taskDate').value;
+            const time = document.getElementById('taskTime').value;
+            const description = document.getElementById('taskDescription').value.trim();
+
+            if (!title || !date || !time) return;
+
+            if (id) {
+                // Update existing
+                tasks = tasks.map(t => t.id === id ? { id, title, category, status, date, time, description } : t);
+            } else {
+                // Create new
+                const newTask = {
+                    id: Date.now().toString(),
+                    title,
+                    category,
+                    status,
+                    date,
+                    time,
+                    description
+                };
+                tasks.push(newTask);
+            }
+
+            saveTasks();
+            renderTasks();
+            closeTaskModal();
+        }
+
+        // --- GOOGLE CALENDAR SYNC HELPER FUNCTIONS ---
+        function generateGoogleCalendarUrl(task) {
+            // Convert task date/time to ISO format for Google Calendar Deep Link
+            const startDateTime = new Date(`${task.date}T${task.time}:00`);
+            const endDateTime = new Date(startDateTime.getTime() + (60 * 60 * 1000)); // Default 1 hour duration
+
+            const formatGCalTime = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+            const title = encodeURIComponent(task.title);
+            const details = encodeURIComponent(`Category: ${task.category}\nStatus: ${task.status}\n\n${task.description || ''}`);
+            const dates = `${formatGCalTime(startDateTime)}/${formatGCalTime(endDateTime)}`;
+
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}`;
+        }
+
+        function openSyncModal() {
+            document.getElementById('syncModal').classList.remove('hidden');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.add('hidden');
+        }
+
+        // --- EXPORT TO ICS CALENDAR FILE ---
+        function exportToICS() {
+            if(tasks.length === 0) {
+                alert('No tasks to export.');
+                return;
+            }
+
+            let icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//ChronoSync Task Tracker//EN",
+                "CALSCALE:GREGORIAN"
+            ];
+
+            tasks.forEach(t => {
+                const start = new Date(`${t.date}T${t.time}:00`);
+                const end = new Date(start.getTime() + (60 * 60 * 1000)); // 1 hr default
+
+                const formatICSDate = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+                icsContent.push(
+                    "BEGIN:VEVENT",
+                    `UID:${t.id}@chronosync.app`,
+                    `DTSTAMP:${formatICSDate(new Date())}`,
+                    `DTSTART:${formatICSDate(start)}`,
+                    `DTEND:${formatICSDate(end)}`,
+                    `SUMMARY:${t.title}`,
+                    `DESCRIPTION:Category: ${t.category}\\nStatus: ${t.status}\\n\\n${t.description || ''}`,
+                    "END:VEVENT"
+                );
+            });
+
+            icsContent.push("END:VCALENDAR");
+
+            const blob = new Blob([icsContent.join("\r\n")], { type: 'text/calendar;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', 'my_schedule.ics');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
